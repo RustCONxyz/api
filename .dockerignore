@@ -1,0 +1,24 @@
+# Docker
+Dockerfile
+.dockerignore
+
+# Dependencies
+node_modules
+
+# Build Folder
+dist
+
+# Environment Variables
+*.env
+.env*.local
+
+# Git
+.git
+.gitignore
+
+# IDEs
+.idea
+.vscode
+
+# Other
+.infisical.json
