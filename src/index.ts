@@ -18,7 +18,7 @@ const notificationMessages = new Map([
     ["serverUpdates", { title: "Server Update", body: "A new Rust server update is available!"}],
     ["oxideUpdates", { title: "Oxide Update", body: "An update for Oxide has been released!"}],
     ["carbonUpdates", { title: "Carbon Update", body: "An update for Carbon has been released!"}],
-    ["protocolUpdates", { title: "Protocol Update", body: "A new Rust protocol update is available!"}]
+    ["protocolUpdates", { title: "Protocol Update", body: "The protocol has been updated, which means the lastest update is mandatory!"}]
 ]);
 
 app.use(express.json());
@@ -125,7 +125,7 @@ app.post("/rusttools-webhook", isAuthed, async (req, res) => {
 
     const messages: ExpoPushMessage[] = [];
 
-    const notificationMessage = notificationMessages.get(webhookData.type);
+    const notificationMessage = notificationMessages.get(`${webhookData.type}Updates`);
 
     if (!notificationMessage) {
 
