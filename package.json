@@ -1,7 +1,7 @@
 {
   "name": "rustcon-api",
   "version": "1.0.0",
-  "description": "RustCON API - Notifications, Current Versions, ...",
+  "description": "RustCON API - Notifications, Current Versions...",
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
