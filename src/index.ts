@@ -1,13 +1,25 @@
 import "dotenv/config";
 import express from "express";
-import { Expo } from "expo-server-sdk";
+import { Expo, type ExpoPushMessage, type ExpoPushTicket } from "expo-server-sdk";
 
 import connectToDatabase from "./database/index.js";
 
 import PushToken from "./database/models/PushToken.js";
 import Version from "./database/models/Version.js";
 
+import type RustToolsWebhook from "./interfaces/RustToolsWebhook.js";
+
 const app = express();
+
+const expo = new Expo({ accessToken: process.env.EXPO_ACCESS_TOKEN });
+
+const notificationMessages = new Map([
+    ["clientUpdates", { title: "Client Update", body: "A new Rust client update is available!"}],
+    ["serverUpdates", { title: "Server Update", body: "A new Rust server update is available!"}],
+    ["oxideUpdates", { title: "Oxide Update", body: "An update for Oxide has been released!"}],
+    ["carbonUpdates", { title: "Carbon Update", body: "An update for Carbon has been released!"}],
+    ["protocolUpdates", { title: "Protocol Update", body: "A new Rust protocol update is available!"}]
+]);
 
 app.use(express.json());
 
@@ -32,6 +44,8 @@ app.get("/versions", async (req, res) => {
         const currentVersions: any = {};
 
         versions.forEach((version) => {
+
+            version = version.toObject();
 
             currentVersions[version.type] = {
 
@@ -96,6 +110,127 @@ app.post("/push-token", async (req, res) => {
 app.post("/rusttools-webhook", isAuthed, async (req, res) => {
 
     res.sendStatus(200);
+
+    const webhook = req.body as RustToolsWebhook;
+
+    if (webhook.event !== "update") {
+
+        return;
+
+    }
+
+    const webhookData = webhook.data;
+
+    const pushTokens = await PushToken.find({ [`settings.${webhookData.type}Updates`]: true });
+
+    const messages: ExpoPushMessage[] = [];
+
+    const notificationMessage = notificationMessages.get(webhookData.type);
+
+    if (!notificationMessage) {
+
+        return;
+
+    }
+
+    pushTokens.forEach(pushToken => {
+
+        messages.push({
+
+            to: pushToken.token,
+
+            sound: "default",
+
+            title: notificationMessage.title,
+
+            body: notificationMessage.body,
+
+        });
+
+    });
+
+    const chunks = expo.chunkPushNotifications(messages);
+
+    const tickets: ExpoPushTicket[] = [];
+
+    (async () => {
+
+        for (const chunk of chunks) {
+
+            try {
+
+                const ticketChunk = await expo.sendPushNotificationsAsync(chunk);
+
+                tickets.push(...ticketChunk);
+
+            } catch (error) {
+
+                console.error(error);
+
+            }
+
+        }
+
+    })();
+
+    const receiptIds = [];
+
+    for (let ticket of tickets) {
+
+        if (ticket.status === "ok") {
+
+            receiptIds.push(ticket.id);
+
+        }
+
+    }
+
+    const receiptIdChunks = expo.chunkPushNotificationReceiptIds(receiptIds);
+
+    (async () => {
+
+        for (let chunk of receiptIdChunks) {
+
+            try {
+
+                let receipts = await expo.getPushNotificationReceiptsAsync(chunk);
+
+                for (let receiptId in receipts) {
+
+                    const receipt = receipts[receiptId];
+
+                    if (receipt.status === "ok") {
+
+                        continue;
+
+                    } else if (receipt.status === "error") {
+
+                        console.error(`There was an error sending a notification: ${receipt.message}`);
+
+                        if (receipt.details && receipt.details.error) {
+
+                            if (receipt.details.error === "DeviceNotRegistered") {
+
+                                // @ts-ignore
+                                await PushToken.deleteOne({ expoPushToken: tickets.find(ticket => ticket.id === receiptId)?.to });
+
+                            }
+
+                        }
+
+                    }
+
+                }
+
+            } catch (error) {
+
+                console.error(error);
+
+            }
+
+        }
+
+    })();
 
 });
 
