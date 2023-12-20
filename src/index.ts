@@ -113,7 +113,7 @@ app.post("/rusttools-webhook", isAuthed, async (req, res) => {
 
     const webhook = req.body as RustToolsWebhook;
 
-    if (webhook.event !== "update") {
+    if (webhook.event !== "NEW_VERSION") {
 
         return;
 
