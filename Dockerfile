@@ -10,11 +10,11 @@ RUN corepack enable
 
 WORKDIR /app
 
+COPY package.json pnpm-lock.yaml /app/
+
 # App Dependencies 
 
 FROM base AS deps
-
-COPY package.json pnpm-lock.yaml /app/
 
 RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --prod --frozen-lockfile
 
@@ -44,4 +44,4 @@ COPY --from=builder /app/dist /app/dist
 
 EXPOSE 3000
 
-CMD ["infisical", "run", "--env=prod", "pnpm", "start"]
+CMD ["infisical", "run", "--env=prod", "node", "dist/index.js"]

@@ -6,8 +6,6 @@ export default interface Version extends Document {
 
     version: string;
 
-    releaseDate: Date;
-
-    releaseUnix: number;
+    release: number;
 
 }

@@ -1,5 +1,5 @@
 import { Schema, model } from "mongoose";
-import type Version from "../../interfaces/Version.js";
+import type Version from "../../types/Version.js";
 
 const versionSchema = new Schema<Version>({
 
@@ -13,12 +13,7 @@ const versionSchema = new Schema<Version>({
         required: true
     },
 
-    releaseDate: {
-        type: Date,
-        required: true
-    },
-
-    releaseUnix: {
+    release: {
         type: Number,
         required: true
     }
