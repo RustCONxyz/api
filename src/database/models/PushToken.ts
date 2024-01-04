@@ -1,7 +1,7 @@
 import { Schema, model } from "mongoose";
-import PushToken, { PushTokenSettings } from "../../interfaces/PushToken.js";
+import { PushToken } from "../../schemas/PushToken.js";
 
-const pushTokenSettingsSchema = new Schema<PushTokenSettings>({
+const pushTokenSettingsSchema = new Schema<PushToken["settings"]>({
 
     clientUpdates: {
         type: Boolean,

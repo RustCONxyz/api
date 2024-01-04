@@ -21,4 +21,5 @@ dist
 .vscode
 
 # Other
+*.md
 .infisical.json

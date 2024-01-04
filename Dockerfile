@@ -1,39 +1,46 @@
-# App Dependencies 
+# Base Image
 
-FROM node:18-alpine AS deps
+FROM node:20-alpine AS base
+
+ENV PNPM_HOME="/pnpm"
+
+ENV PATH="$PNPM_HOME:$PATH"
+
+RUN corepack enable
 
 WORKDIR /app
 
-COPY package.json package-lock.json ./
+COPY package.json pnpm-lock.yaml /app/
 
-RUN npm ci
+# App Dependencies 
+
+FROM base AS deps
+
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --prod --frozen-lockfile
 
 # Build App
 
-FROM node:18-alpine AS builder
+FROM base AS builder
 
-WORKDIR /app
+COPY . /app
 
-COPY --from=deps /app/node_modules ./node_modules
+RUN --mount=type=cache,id=pnpm,target=/pnpm/store pnpm install --frozen-lockfile
 
-COPY . .
-
-RUN npm run build
+RUN pnpm run build
 
 # Production Image
 
-FROM node:18-alpine AS runner
+FROM base
+
+ENV NODE_ENV production
 
 RUN apk add --no-cache bash curl && \
     curl -1sLf "https://dl.cloudsmith.io/public/infisical/infisical-cli/setup.alpine.sh" | bash && \
     apk add infisical
 
-WORKDIR /app
+COPY --from=deps /app/node_modules /app/node_modules
 
-ENV NODE_ENV production
-
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/node_modules ./node_modules
+COPY --from=builder /app/dist /app/dist
 
 EXPOSE 3000
 
